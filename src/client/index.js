@@ -39,34 +39,6 @@ export const DefaultBroadcastDelegate = async function (signedTx) {
   return this.sendTransaction(signedTx)
 }
 
-/**
- * The Ledger signing delegate.
- * @param  {LedgerApp}  ledgerApp
- * @param  {preSignCb}  function
- * @param  {postSignCb} function
- * @param  {errCb} function
- * @return {function}
- */
-export const LedgerSigningDelegate = (ledgerApp, preSignCb, postSignCb, errCb, hdPath) => async function (
-  tx, signMsg
-) {
-  const signBytes = tx.getSignBytes(signMsg)
-  preSignCb && preSignCb(signBytes)
-  let pubKeyResp, sigResp
-  try {
-    pubKeyResp = await ledgerApp.getPublicKey(hdPath)
-    sigResp = await ledgerApp.sign(signBytes, hdPath)
-    postSignCb && postSignCb(pubKeyResp, sigResp)
-  } catch (err) {
-    console.warn("LedgerSigningDelegate error", err)
-    errCb && errCb(err)
-  }
-  if (sigResp && sigResp.signature) {
-    const pubKey = crypto.getPublicKey(pubKeyResp.pk.toString("hex"))
-    return tx.addSignature(pubKey, sigResp.signature)
-  }
-  return tx
-}
 
 /**
  * validate the input number.
@@ -211,18 +183,6 @@ export class BncClient {
     return this
   }
 
-  /**
-   * Applies the Ledger signing delegate.
-   * @param {function} ledgerApp
-   * @param {function} preSignCb
-   * @param {function} postSignCb
-   * @param {function} errCb
-   * @return {BncClient} this instance (for chaining)
-   */
-  useLedgerSigningDelegate(ledgerApp, preSignCb, postSignCb, errCb, hdPath) {
-    this._signingDelegate = LedgerSigningDelegate(ledgerApp, preSignCb, postSignCb, errCb, hdPath)
-    return this
-  }
 
   /**
    * Transfer tokens from one address to another.
